@@ -32,6 +32,8 @@ class NoticeType(models.Model):
     display = models.CharField(_("display"), max_length=50)
     description = models.CharField(_("description"), max_length=100)
 
+    active = models.BooleanField(default=True)
+
     # by default only on for media with sensitivity less than or equal to this number
     default = models.IntegerField(_("default"))
 
@@ -141,6 +143,8 @@ def send_now(users, label, extra_context=None, sender=None, scoping=None):
         extra_context = {}
 
     notice_type = NoticeType.objects.get(label=label)
+    if not notice_type.active:
+        return
 
     current_language = get_language()
 
@@ -193,6 +197,9 @@ def queue(users, label, extra_context=None, sender=None):
     of user notifications to be deferred to a seperate process running outside
     the webserver.
     """
+    notice_type = NoticeType.objects.get(label=label)
+    if not notice_type.active:
+        return
     if extra_context is None:
         extra_context = {}
     if isinstance(users, QuerySet):
