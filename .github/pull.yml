@@ -1,0 +1,13 @@
+version: "1"
+rules:
+  - base: bdw-dev
+    upstream: master
+    mergeMethod: merge
+    assignees:
+      - skulegirl
+  - base: master
+    upstream: pinax:master
+    mergeMethod: hardreset
+    mergeUnstable: true
+    conflictReviewers:
+      - skulegirl
