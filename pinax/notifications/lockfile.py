@@ -49,14 +49,14 @@ Exceptions:
 
 from __future__ import division
 
-import sys
-import socket
+import errno
 import os
+import socket
+import sys
 import threading
 import time
-import errno
 
-from .compat import quote, get_ident
+from .compat import get_ident, quote
 
 # Work with PEP8 and non-PEP8 versions of threading module.
 if not hasattr(threading, "current_thread"):

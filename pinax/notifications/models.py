@@ -1,22 +1,20 @@
-from __future__ import unicode_literals
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import base64
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.db.models.query import QuerySet
-from django.core.exceptions import ImproperlyConfigured
-from django.utils.translation import ugettext_lazy as _
-from django.utils.translation import get_language, activate
 from django.utils.encoding import python_2_unicode_compatible
 from django.utils.six.moves import cPickle as pickle  # pylint: disable-msg=F
+from django.utils.translation import ugettext_lazy as _
+from django.utils.translation import activate, get_language
 
-from django.contrib.contenttypes.models import ContentType
-
-from .compat import GenericForeignKey
 from .conf import settings
-from .utils import load_media_defaults, notice_setting_for_user
-
+from .hooks import hookset
+from .utils import load_media_defaults
 
 NOTICE_MEDIA, NOTICE_MEDIA_DEFAULTS = load_media_defaults()
 
@@ -79,11 +77,24 @@ class NoticeSetting(models.Model):
     of a given type to a given medium.
     """
 
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_("user"))
-    notice_type = models.ForeignKey(NoticeType, verbose_name=_("notice type"))
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_("user"),
+        on_delete=models.CASCADE
+    )
+    notice_type = models.ForeignKey(
+        NoticeType,
+        verbose_name=_("notice type"),
+        on_delete=models.CASCADE
+    )
     medium = models.CharField(_("medium"), max_length=1, choices=NOTICE_MEDIA)
     send = models.BooleanField(_("send"), default=False)
-    scoping_content_type = models.ForeignKey(ContentType, null=True, blank=True)
+    scoping_content_type = models.ForeignKey(
+        ContentType,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL
+    )
     scoping_object_id = models.PositiveIntegerField(null=True, blank=True)
     scoping = GenericForeignKey("scoping_content_type", "scoping_object_id")
 
@@ -94,7 +105,7 @@ class NoticeSetting(models.Model):
 
         @@@ consider deprecating
         """
-        return notice_setting_for_user(user, notice_type, medium, scoping)
+        return hookset.notice_setting_for_user(user, notice_type, medium, scoping)
 
     class Meta:
         verbose_name = _("notice setting")
@@ -209,4 +220,7 @@ def queue(users, label, extra_context=None, sender=None):
     notices = []
     for user in users:
         notices.append((user, label, extra_context, sender))
-    NoticeQueueBatch(pickled_data=base64.b64encode(pickle.dumps(notices))).save()
+    # After b64 encoding, bytestring must be converted to string via `decode()`
+    # for use in Django 2.0+ TextField.
+    pickled_data = base64.b64encode(pickle.dumps(notices)).decode()
+    NoticeQueueBatch(pickled_data=pickled_data).save()

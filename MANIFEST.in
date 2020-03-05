@@ -1,5 +1,4 @@
 include AUTHORS
 include LICENSE
-include README.rst
-recursive-include pinax/notifications/static *
-recursive-include pinax/notifications/templates *
+include README.md
+recursive-include pinax/notifications/locale *

@@ -2,17 +2,16 @@ from __future__ import unicode_literals
 
 import importlib
 
+from django.apps import apps as django_apps
 from django.conf import settings  # noqa
 from django.core.exceptions import ImproperlyConfigured
-
-from .compat import get_model
 
 from appconf import AppConf
 
 
 def load_model(path):
     try:
-        return get_model(path)
+        return django_apps.get_model(path)
     except ValueError:
         raise ImproperlyConfigured(
             "{0} must be of the form 'app_label.model_name'".format(path)
@@ -49,6 +48,7 @@ class PinaxNotificationsAppConf(AppConf):
     GET_LANGUAGE_MODEL = None
     LANGUAGE_MODEL = None
     QUEUE_ALL = False
+    HOOKSET = "pinax.notifications.hooks.DefaultHookSet"
     BACKENDS = [
         ("email", "pinax.notifications.backends.email.EmailBackend"),
     ]
@@ -72,6 +72,9 @@ class PinaxNotificationsAppConf(AppConf):
     def configure_get_language_model(self, value):
         if value is None:
             return lambda: load_model(settings.PINAX_NOTIFICATIONS_LANGUAGE_MODEL)
+
+    def configure_hookset(self, value):
+        return load_path_attr(value)()
 
     class Meta:
         prefix = "pinax_notifications"

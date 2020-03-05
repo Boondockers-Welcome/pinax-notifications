@@ -3,8 +3,8 @@ from django.utils.decorators import method_decorator
 from django.views.generic import TemplateView
 
 from .compat import login_required
-from .models import NoticeType, NOTICE_MEDIA
-from .utils import notice_setting_for_user
+from .hooks import hookset
+from .models import NOTICE_MEDIA, NoticeType
 
 
 class NoticeSettingsView(TemplateView):
@@ -19,7 +19,7 @@ class NoticeSettingsView(TemplateView):
         return None
 
     def setting_for_user(self, notice_type, medium_id):
-        return notice_setting_for_user(
+        return hookset.notice_setting_for_user(
             self.request.user,
             notice_type,
             medium_id,

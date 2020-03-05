@@ -1,21 +1,25 @@
 import base64
 
-from django.core import mail
-from django.utils.six.moves import cPickle as pickle
-from django.test import TestCase
-from django.test.utils import override_settings
-
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
-
-from ..conf import settings
-from ..models import NoticeType, NoticeQueueBatch, NoticeSetting
-from ..models import LanguageStoreNotAvailable
-from ..models import get_notification_language, send_now, send, queue
-
-from .models import Language
+from django.core import mail
+from django.test import TestCase
+from django.test.utils import override_settings
+from django.utils.six.moves import cPickle as pickle
 
 from . import get_backend_id
+from ..conf import settings
+from ..models import (
+    LanguageStoreNotAvailable,
+    NoticeQueueBatch,
+    NoticeSetting,
+    NoticeType,
+    get_notification_language,
+    queue,
+    send,
+    send_now,
+)
+from .models import Language
 
 
 class BaseTest(TestCase):
