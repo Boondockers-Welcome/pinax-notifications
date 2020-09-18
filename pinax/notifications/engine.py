@@ -9,7 +9,7 @@ from django.contrib.sites.models import Site
 from django.core.mail import mail_admins
 from django.utils.six.moves import cPickle as pickle  # pylint: disable-msg=F
 
-from . import models as notification
+from pinax.notifications_backends import models as notification
 from .conf import settings
 from .lockfile import AlreadyLocked, FileLock, LockTimeout
 from .models import NoticeQueueBatch
