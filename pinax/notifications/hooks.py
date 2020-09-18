@@ -1,5 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
 from .conf import settings
 from .utils import load_media_defaults
@@ -37,6 +37,13 @@ class DefaultHookSet(object):
             kwargs.update({"send": default})
             setting = user.noticesetting_set.create(**kwargs)
             return setting
+        except MultipleObjectsReturned:
+            # double display first time may cause multiple instances of the
+            # same notifiation to get created. Delete the extras and return the first
+            nl = user.noticesetting_set.filter(**kwargs)
+            for n in nl[1:]:
+                n.delete()
+            return nl[0]
 
 
 class HookProxy(object):
