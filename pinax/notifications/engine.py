@@ -47,6 +47,10 @@ def send_all(*args):
         for queued_batch in NoticeQueueBatch.objects.all():
             notices = pickle.loads(base64.b64decode(queued_batch.pickled_data))
             for user, label, extra_context, sender in notices:
+                if label in settings.PINAX_NOTIFICATIONS_AGGREGATE_NOTICES:
+                    aggregateNoticeClass = settings.PINAX_NOTIFICATIONS_AGGREGATE_NOTICES[label]
+                    if aggregateNoticeClass.save_notice_to_aggregate(label, user, extra_context, sender):
+                        continue
                 try:
                     user = get_user_model().objects.get(pk=user)
                     logging.info("emitting notice {0} to {1}".format(label, user))
@@ -71,6 +75,36 @@ def send_all(*args):
             sent_actual=sent_actual,
             run_time="%.2f seconds" % (time.time() - start_time)
         )
+
+        start_time = time.time()
+        batches, sent, sent_actual = 0, 0, 0
+        for (label, getAggregateNoticeClass) in settings.PINAX_NOTIFICATIONS_AGGREGATE_NOTICES.items():
+            notices = getAggregateNoticeClass.get_aggregate_notices_method()
+            for user, label, extra_context, sender in notices:
+                try:
+                    user = get_user_model().objects.get(pk=user)
+                    logging.info("emitting notice {0} to {1}".format(label, user))
+                    # call this once per user to be atomic and allow for logging to
+                    # accurately show how long each takes.
+                    if notification.send_now([user], label, extra_context, sender):
+                        sent_actual += 1
+                except get_user_model().DoesNotExist:
+                    # Ignore deleted users, just warn about them
+                    logging.warning(
+                        "not emitting notice {0} to user {1} since it does not exist".format(
+                            label,
+                            user)
+                    )
+                sent += 1
+            batches += 1
+        emitted_notices.send(
+            sender=NoticeQueueBatch,
+            batches=batches,
+            sent=sent,
+            sent_actual=sent_actual,
+            run_time="%.2f seconds" % (time.time() - start_time)
+        )
+
     except Exception:  # pylint: disable-msg=W0703
         # get the exception
         _, e, _ = sys.exc_info()

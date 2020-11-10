@@ -52,6 +52,22 @@ class PinaxNotificationsAppConf(AppConf):
     BACKENDS = [
         ("email", "pinax.notifications.backends.email.EmailBackend"),
     ]
+    AGGREGATE_NOTICES = {
+        # Format label_name: AggregateNoticeModel
+        # where AggregateNotice Model implements the following class methods
+        #   @classmethod
+        #   def save_notice_to_aggregate(label, user, extra_context, sender)
+        #       method should store unsent notices in a model to be dealt
+        #       with in aggregate_send_method.
+        #       Returns boolean indicating if notice is being saved for aggregation.
+        #       If not, engine will send it immediately.
+        #
+        #   @classmethod
+        #   def get_aggregate_notices_method():
+        #       returns list of notices to send in format
+        #       [(user, label, extra_content, sender)]
+        #       Note that label returned here could be different than original label
+    }
 
     def configure_backends(self, value):
         backends = []
@@ -72,6 +88,12 @@ class PinaxNotificationsAppConf(AppConf):
     def configure_get_language_model(self, value):
         if value is None:
             return lambda: load_model(settings.PINAX_NOTIFICATIONS_LANGUAGE_MODEL)
+
+    def configure_aggregate_notices(self, value):
+        aggregate_notices = {}
+        for label, model in value.items():
+            aggregate_notices[label] = load_path_attr(model)
+        return aggregate_notices
 
     def configure_hookset(self, value):
         return load_path_attr(value)()
