@@ -65,6 +65,13 @@ def send_all(*args):
                             label,
                             user)
                     )
+                except Exception as e:
+                    # some other error - log it as critical but keep going
+                    logging.exception(
+                        "not emitting notice {0} to user {1} because of exception".format(
+                            label, user
+                        )
+                    )
                 sent += 1
             queued_batch.delete()
             batches += 1
@@ -94,6 +101,13 @@ def send_all(*args):
                         "not emitting notice {0} to user {1} since it does not exist".format(
                             label,
                             user)
+                    )
+                except Exception as e:
+                    # some other error - log it as critical but keep going
+                    logging.exception(
+                        "not emitting notice {0} to user {1} because of exception".format(
+                            label, user
+                        )
                     )
                 sent += 1
             batches += 1
